@@ -1,10 +1,16 @@
 # Godot 4 project
 .godot/
-
-# Godot 4 .NET C#
 .mono/
+
+# C#
 bin/
 obj/
+
+# Addons
+addons/
+
+# Specific files
+CLAUDE.md
 *.user
 *.userprefs
 *.sln.user
