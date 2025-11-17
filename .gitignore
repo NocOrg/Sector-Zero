@@ -1,0 +1,10 @@
+# Godot 4 project
+.godot/
+
+# Godot 4 .NET C#
+.mono/
+bin/
+obj/
+*.user
+*.userprefs
+*.sln.user
