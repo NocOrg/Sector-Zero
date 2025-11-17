@@ -1,6 +1,7 @@
-# Godot 4 project
+# .folders
 .godot/
 .mono/
+.claude/
 
 # C#
 bin/
