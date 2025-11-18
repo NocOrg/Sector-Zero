@@ -12,6 +12,8 @@ addons/
 
 # Specific files
 CLAUDE.md
+PLAN.md
+STATUS.md
 *.user
 *.userprefs
 *.sln.user
