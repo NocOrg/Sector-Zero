@@ -32,6 +32,7 @@ public partial class Player : CharacterBody3D
 	// Public properties for stealth detection
 	public MovementState CurrentMovementState { get; private set; } = MovementState.Idle;
 	public bool IsMoving { get; private set; }
+	public Vector3 EyePosition => _camera != null ? _camera.GlobalPosition : GlobalPosition + Vector3.Up * 1.6f;
 
 	public override void _Ready()
 	{

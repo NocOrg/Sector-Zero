@@ -13,6 +13,7 @@ public partial class Intruder : CharacterBody3D
 
 	// Stealth Detection Settings
 	[Export] public float VisualRange = 10.0f;
+	[Export] public float VisualRangeCrouchMultiplier = 0.5f; // Crouching reduces visual detection range
 	[Export] public float SoundRangeCrouch = 3.0f;
 	[Export] public float SoundRangeWalk = 8.0f;
 	[Export] public float SoundRangeSprint = 15.0f;
@@ -194,10 +195,18 @@ public partial class Intruder : CharacterBody3D
 
 		float distanceToPlayer = GlobalPosition.DistanceTo(playerTarget.GlobalPosition);
 
-		// Check line-of-sight detection
+		// Check line-of-sight detection with crouch modifier
 		bool hasLineOfSight = CheckLineOfSight();
-		if (hasLineOfSight && distanceToPlayer <= VisualRange)
-			return true;
+		if (hasLineOfSight)
+		{
+			// Crouching reduces visual detection range
+			float effectiveVisualRange = VisualRange;
+			if (playerTarget.CurrentMovementState == MovementState.Crouching)
+				effectiveVisualRange *= VisualRangeCrouchMultiplier;
+
+			if (distanceToPlayer <= effectiveVisualRange)
+				return true;
+		}
 
 		// Check sound-based detection
 		if (playerTarget.IsMoving)
@@ -223,8 +232,7 @@ public partial class Intruder : CharacterBody3D
 			return false;
 
 		Vector3 eyePosition = GlobalPosition + Vector3.Up * 1.5f;
-		Vector3 playerEyePosition = playerTarget.GlobalPosition + Vector3.Up * 1.5f;
-		Vector3 directionToPlayer = (playerEyePosition - eyePosition).Normalized();
+		Vector3 playerEyePosition = playerTarget.EyePosition; // Use actual camera position
 
 		var spaceState = GetWorld3D().DirectSpaceState;
 		var query = PhysicsRayQueryParameters3D.Create(eyePosition, playerEyePosition);
