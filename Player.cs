@@ -1,5 +1,7 @@
 using Godot;
 
+public enum MovementState { Idle, Crouching, Walking, Sprinting }
+
 public partial class Player : CharacterBody3D
 {
 	[Export] public float WalkSpeed = 3.0f;
@@ -26,6 +28,10 @@ public partial class Player : CharacterBody3D
 	private float _currentHeight;
 	private float _currentStamina;
 	private float _timeSinceLastSprint;
+
+	// Public properties for stealth detection
+	public MovementState CurrentMovementState { get; private set; } = MovementState.Idle;
+	public bool IsMoving { get; private set; }
 
 	public override void _Ready()
 	{
@@ -120,6 +126,17 @@ public partial class Player : CharacterBody3D
 			velocity.X = Mathf.MoveToward(velocity.X, 0, speed);
 			velocity.Z = Mathf.MoveToward(velocity.Z, 0, speed);
 		}
+
+		// Update movement state for stealth system
+		IsMoving = direction != Vector3.Zero;
+		if (!IsMoving)
+			CurrentMovementState = MovementState.Idle;
+		else if (isCrouching)
+			CurrentMovementState = MovementState.Crouching;
+		else if (isSprinting)
+			CurrentMovementState = MovementState.Sprinting;
+		else
+			CurrentMovementState = MovementState.Walking;
 
 		Velocity = velocity;
 		MoveAndSlide();

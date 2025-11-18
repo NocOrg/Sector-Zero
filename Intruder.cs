@@ -11,13 +11,20 @@ public partial class Intruder : CharacterBody3D
 	[Export] public float Speed = 5.0f;
 	[Export] public float PatrolRadius = 20.0f;
 
+	// Stealth Detection Settings
+	[Export] public float VisualRange = 10.0f;
+	[Export] public float SoundRangeCrouch = 3.0f;
+	[Export] public float SoundRangeWalk = 8.0f;
+	[Export] public float SoundRangeSprint = 15.0f;
+
 	// Node References
 	private NavigationAgent3D navAgent;
 	private Area3D detectionZone;
 	private Timer patrolTimer;
 
 	// State
-	private CharacterBody3D playerTarget;
+	private Player playerTarget;
+	private bool playerInRange;
 	private float gravity;
 
 	public override void _Ready()
@@ -56,6 +63,25 @@ public partial class Intruder : CharacterBody3D
 		if (!IsOnFloor())
 		{
 			Velocity = new Vector3(Velocity.X, Velocity.Y - gravity * (float)delta, Velocity.Z);
+		}
+
+		// Stealth detection system
+		if (playerInRange && playerTarget != null)
+		{
+			bool detected = CanDetectPlayer();
+
+			if (detected && currentState != AIState.Chase)
+			{
+				// Player detected - start chasing
+				currentState = AIState.Chase;
+			}
+			else if (!detected && currentState == AIState.Chase)
+			{
+				// Lost the player - return to patrol
+				currentState = AIState.Patrol;
+				if (navAgent != null)
+					navAgent.TargetPosition = GetRandomReachablePoint();
+			}
 		}
 
 		// State-dependent behavior
@@ -161,6 +187,62 @@ public partial class Intruder : CharacterBody3D
 		);
 	}
 
+	private bool CanDetectPlayer()
+	{
+		if (playerTarget == null)
+			return false;
+
+		float distanceToPlayer = GlobalPosition.DistanceTo(playerTarget.GlobalPosition);
+
+		// Check line-of-sight detection
+		bool hasLineOfSight = CheckLineOfSight();
+		if (hasLineOfSight && distanceToPlayer <= VisualRange)
+			return true;
+
+		// Check sound-based detection
+		if (playerTarget.IsMoving)
+		{
+			float soundRange = playerTarget.CurrentMovementState switch
+			{
+				MovementState.Crouching => SoundRangeCrouch,
+				MovementState.Walking => SoundRangeWalk,
+				MovementState.Sprinting => SoundRangeSprint,
+				_ => 0f
+			};
+
+			if (distanceToPlayer <= soundRange)
+				return true;
+		}
+
+		return false;
+	}
+
+	private bool CheckLineOfSight()
+	{
+		if (playerTarget == null)
+			return false;
+
+		Vector3 eyePosition = GlobalPosition + Vector3.Up * 1.5f;
+		Vector3 playerEyePosition = playerTarget.GlobalPosition + Vector3.Up * 1.5f;
+		Vector3 directionToPlayer = (playerEyePosition - eyePosition).Normalized();
+
+		var spaceState = GetWorld3D().DirectSpaceState;
+		var query = PhysicsRayQueryParameters3D.Create(eyePosition, playerEyePosition);
+		query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
+		query.CollideWithAreas = false;
+
+		var result = spaceState.IntersectRay(query);
+
+		if (result.Count > 0)
+		{
+			var collider = result["collider"];
+			if (collider.Obj is Node node && node.IsInGroup("Player"))
+				return true;
+		}
+
+		return false;
+	}
+
 	private void OnPatrolTimerTimeout()
 	{
 		// Only set new patrol point if we're in patrol state
@@ -172,10 +254,10 @@ public partial class Intruder : CharacterBody3D
 
 	private void OnDetectionZoneBodyEntered(Node3D body)
 	{
-		if (body.IsInGroup("Player") && body is CharacterBody3D player)
+		if (body.IsInGroup("Player") && body is Player player)
 		{
 			playerTarget = player;
-			currentState = AIState.Chase;
+			playerInRange = true;
 		}
 	}
 
@@ -183,6 +265,7 @@ public partial class Intruder : CharacterBody3D
 	{
 		if (body == playerTarget)
 		{
+			playerInRange = false;
 			playerTarget = null;
 			currentState = AIState.Patrol;
 
