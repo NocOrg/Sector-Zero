@@ -2,7 +2,7 @@ using Godot;
 
 public partial class GameManager : Node
 {
-	[Export] public int TotalSwitches = 1;
+	[Export] public int TotalSwitches = 3;
 
 	private int _activatedSwitches;
 
@@ -12,6 +12,11 @@ public partial class GameManager : Node
 
 		if (_activatedSwitches >= TotalSwitches)
 			TriggerEnding();
+	}
+
+	public void OnPlayerDeath()
+	{
+		GetTree().CreateTimer(1.0).Timeout += () => GetTree().ReloadCurrentScene();
 	}
 
 	private void TriggerEnding()
