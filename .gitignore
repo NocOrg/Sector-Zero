@@ -17,3 +17,6 @@ STATUS.md
 *.user
 *.userprefs
 *.sln.user
+Node2d.cs
+node_2d.tscn
+GETTING_STARTED.md
